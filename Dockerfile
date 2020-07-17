@@ -1,11 +1,4 @@
 FROM ubuntu:14.04
-ARG userid=1001
-ARG groupid=1001
-ARG username=developer
-# Default password is 'password'
-ARG password='$6$ldfK792N$E0jeNC3MhpDfhXo9V.tDJ2Qt84Qx3lbZtdOLD.SNDcX5kJQT1pNibj3npqeevRgbA5ARDeND5uTWwBDpdZ66T.'
-ARG ssh_prv_key=""
-ARG ssh_pub_key=""
 
 RUN apt-get update && apt-get install -y software-properties-common
 # Added repository for python 3.6
@@ -35,6 +28,14 @@ RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-download
  && echo "d73f3885d717c1dc89eba0563433cec787486a0089b9b04b4e8c56e7c07c7610  /usr/local/bin/repo" | sha256sum --strict -c - \
  && chmod a+x /usr/local/bin/repo
 
+ARG userid=1001
+ARG groupid=1001
+ARG username=developer
+# Default password is 'password'
+ARG password='$6$ldfK792N$E0jeNC3MhpDfhXo9V.tDJ2Qt84Qx3lbZtdOLD.SNDcX5kJQT1pNibj3npqeevRgbA5ARDeND5uTWwBDpdZ66T.'
+ARG ssh_prv_key=""
+ARG ssh_pub_key=""
+
 RUN groupadd -g $groupid $username \
  && useradd -m -u $userid -g $groupid -G sudo -p ${password} $username \
  && echo $username >/root/username \
@@ -52,8 +53,12 @@ ENV USER=$username
 
 # Add the keys and set permissions
 RUN echo "$ssh_prv_key" > /home/$username/.ssh/id_rsa && \
-    echo "$ssh_pub_key" > /home/$username/.ssh/id_rsa.pub && \
-    chmod 600 /home/$username/.ssh/id_rsa && \
+    echo "$ssh_pub_key" > /home/$username/.ssh/id_rsa.pub
+# Overvrite ssh_prv_key and ssh_pub_key arguments
+COPY id_rsa /home/$username/.ssh/id_rsa
+COPY id_rsa.pub /home/$username/.ssh/id_rsa.pub
+# Set correct certificates permissions
+RUN chmod 600 /home/$username/.ssh/id_rsa && \
     chmod 600 /home/$username/.ssh/id_rsa.pub && \
     chown $username:$username /home/$username/.ssh/id_rsa && \
     chown $username:$username /home/$username/.ssh/id_rsa.pub
