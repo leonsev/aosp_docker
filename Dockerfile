@@ -3,7 +3,7 @@ ARG userid=1001
 ARG groupid=1001
 ARG username=developer
 # Default password is 'password'
-ARG password=$6$ldfK792N$E0jeNC3MhpDfhXo9V.tDJ2Qt84Qx3lbZtdOLD.SNDcX5kJQT1pNibj3npqeevRgbA5ARDeND5uTWwBDpdZ66T.
+ARG password='$6$ldfK792N$E0jeNC3MhpDfhXo9V.tDJ2Qt84Qx3lbZtdOLD.SNDcX5kJQT1pNibj3npqeevRgbA5ARDeND5uTWwBDpdZ66T.'
 ARG ssh_prv_key=""
 ARG ssh_pub_key=""
 
@@ -23,7 +23,7 @@ RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-download
  && chmod a+x /usr/local/bin/repo
 
 RUN groupadd -g $groupid $username \
- && useradd -m -u $userid -g $groupid -G sudo -p '$password' $username \
+ && useradd -m -u $userid -g $groupid -G sudo -p ${password} $username \
  && echo $username >/root/username \
  && echo "export USER="$username >>/home/$username/.gitconfig
 COPY gitconfig /home/$username/.gitconfig
@@ -41,6 +41,8 @@ ENV USER=$username
 RUN echo "$ssh_prv_key" > /home/$username/.ssh/id_rsa && \
     echo "$ssh_pub_key" > /home/$username/.ssh/id_rsa.pub && \
     chmod 600 /home/$username/.ssh/id_rsa && \
-    chmod 600 /home/$username/.ssh/id_rsa.pub
+    chmod 600 /home/$username/.ssh/id_rsa.pub && \
+    chown $username:$username /home/$username/.ssh/id_rsa && \
+    chown $username:$username /home/$username/.ssh/id_rsa.pub
 
 ENTRYPOINT chroot --userspec=$(cat /root/username):$(cat /root/username) / /bin/bash -i
