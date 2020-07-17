@@ -1,6 +1,6 @@
 gitconfig
 known_hosts
-.ssh/
+.ssh/*
+configs/*
 !.ssh/dummy
-configs/
 !configs/dummy
