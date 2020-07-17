@@ -4,15 +4,24 @@ older branches that required 14.04 if you've upgraded to something newer.
 
 First, build the image:
 ```
-# Copy your host gitconfig, or create a stripped down version
-$ cp ~/.gitconfig gitconfig
+# Copy your host gitconfig. This will overwrite --build-arg git_* arguments
+$ cp ~/.gitconfig ./configs/.gitconfig
+
+# Copy your SSH config. This will owervite --build-arg ssh_* arguments
+$ cp ~/.ssh/* ./.ssh/
+
+# Build docker image
 $ docker build \
 --build-arg userid=$(id -u) \
 --build-arg groupid=$(id -g) \
 --build-arg username=$(id -un) \
---build-arg ssh_prv_key="$(cat ~/.ssh/id_rsa_github)" \
---build-arg ssh_pub_key="$(cat ~/.ssh/id_rsa_github.pub)" \
 --build-arg password=\'$(mkpasswd  -m sha-512 -S saltsalt -s <<< password)\' \
+--build-arg git_user_mail="developer@mail.com" \
+--build-arg git_user_name="Developer Name" \
+--build-arg ssh_prv_key="$(cat ~/.ssh/id_rsa)" \
+--build-arg ssh_pub_key="$(cat ~/.ssh/id_rsa.pub)" \
+--build-arg ssh_known_hosts="$(ssh-keyscan -H github.com)" \
+--build-arg ssh_config="$(cat ~/.ssh/config)" \
 -t android-build-trusty .
 ```
 

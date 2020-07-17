@@ -51,9 +51,6 @@ RUN groupadd -g $groupid $username \
 ENV HOME=/home/$username
 ENV USER=$username
 
-# Now all comands are executed from user
-USER $username
-
 # Configure SSH
 RUN mkdir -p /home/$username/.ssh && \
     echo "$ssh_prv_key" > /home/$username/.ssh/id_rsa && \
@@ -65,15 +62,21 @@ RUN ssh-keyscan -H bitbucket.org >> /home/$username/.ssh/known_hosts
 RUN ssh-keyscan -H github.com >> /home/$username/.ssh/known_hosts
 # Other way to owervrite full SSH config is to put all required files to the local ./.ssh folder
 COPY ./.ssh/* /home/$username/.ssh/
+#Set correct certificates permissions
+RUN chown -R $username:$username /home/$username/.ssh && \
+    chmod 600 /home/$username/.ssh/*
 
 # Configure git
+# Now all comands are executed from user
+USER $username
 RUN git config --global user.email $git_user_mail
 RUN git config --global user.name $git_user_name
 RUN git config --global color.ui always
 RUN git config --global color.branch always
 RUN git config --global color.status always
+USER root
 # This overrides previous gitconfig settings, if .gitconfig exists
 COPY ./configs/* /home/$username/
+RUN chown $userid:$groupid /home/$username/.gitconfig
 
-USER root
 ENTRYPOINT chroot --userspec=$(cat /root/username):$(cat /root/username) / /bin/bash -i
