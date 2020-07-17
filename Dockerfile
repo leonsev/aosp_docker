@@ -33,8 +33,6 @@ ARG groupid=1001
 ARG username=developer
 # Default password is 'password'
 ARG password='$6$ldfK792N$E0jeNC3MhpDfhXo9V.tDJ2Qt84Qx3lbZtdOLD.SNDcX5kJQT1pNibj3npqeevRgbA5ARDeND5uTWwBDpdZ66T.'
-ARG ssh_prv_key=""
-ARG ssh_pub_key=""
 
 RUN groupadd -g $groupid $username \
  && useradd -m -u $userid -g $groupid -G sudo -p ${password} $username \
@@ -42,25 +40,30 @@ RUN groupadd -g $groupid $username \
  && echo "export USER="$username >>/home/$username/.gitconfig
 COPY gitconfig /home/$username/.gitconfig
 RUN chown $userid:$groupid /home/$username/.gitconfig
-RUN mkdir -p /home/$username/.ssh
-# Add known hosts
-RUN ssh-keyscan -H bitbucket.org >> /home/$username/.ssh/known_hosts
-RUN ssh-keyscan -H github.com >> /home/$username/.ssh/known_hosts
-COPY known_hosts /home/$username/.ssh/known_hosts
-RUN chown $userid:$groupid /home/$username/.ssh/known_hosts
 ENV HOME=/home/$username
 ENV USER=$username
 
-# Add the keys and set permissions
-RUN echo "$ssh_prv_key" > /home/$username/.ssh/id_rsa && \
-    echo "$ssh_pub_key" > /home/$username/.ssh/id_rsa.pub
-# Overvrite ssh_prv_key and ssh_pub_key arguments
-COPY id_rsa /home/$username/.ssh/id_rsa
-COPY id_rsa.pub /home/$username/.ssh/id_rsa.pub
+# Use this variables to ingect own ssh configuration to the image
+ARG ssh_prv_key=""
+ARG ssh_pub_key=""
+ARG ssh_known_hosts=""
+ARG ssh_config=""
+
+# Generate default ssh configuration
+RUN mkdir -p /home/$username/.ssh && \
+    echo "$ssh_prv_key" > /home/$username/.ssh/id_rsa && \
+    echo "$ssh_pub_key" > /home/$username/.ssh/id_rsa.pub && \
+    echo "$ssh_known_hosts" > /home/$username/.ssh/known_hosts && \
+    echo "$ssh_config" > /home/$username/.ssh/config
+# Add known hosts, as example
+RUN ssh-keyscan -H bitbucket.org >> /home/$username/.ssh/known_hosts
+RUN ssh-keyscan -H github.com >> /home/$username/.ssh/known_hosts
+# Other way to owervrite full SSH config is to put all required files to the local ./.ssh folder
+COPY ./.ssh/* /home/$username/.ssh/
 # Set correct certificates permissions
-RUN chmod 600 /home/$username/.ssh/id_rsa && \
-    chmod 600 /home/$username/.ssh/id_rsa.pub && \
-    chown $username:$username /home/$username/.ssh/id_rsa && \
-    chown $username:$username /home/$username/.ssh/id_rsa.pub
+RUN chmod 600 /home/$username/.ssh/* && \
+    chown $username:$username /home/$username/.ssh/* && \
+    chmod 600 /home/$username/.ssh && \
+    chown $username:$username /home/$username/.ssh
 
 ENTRYPOINT chroot --userspec=$(cat /root/username):$(cat /root/username) / /bin/bash -i

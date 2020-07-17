@@ -1,2 +1,4 @@
 gitconfig
 known_hosts
+.ssh/
+!.ssh/dummu
