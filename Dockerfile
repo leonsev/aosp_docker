@@ -2,6 +2,8 @@ FROM ubuntu:14.04
 ARG userid=1001
 ARG groupid=1001
 ARG username=developer
+# Default password is 'password'
+ARG password=$6$ldfK792N$E0jeNC3MhpDfhXo9V.tDJ2Qt84Qx3lbZtdOLD.SNDcX5kJQT1pNibj3npqeevRgbA5ARDeND5uTWwBDpdZ66T.
 
 RUN apt-get update && apt-get install -y bc git-core gnupg flex bison gperf build-essential zip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z-dev ccache libgl1-mesa-dev libxml2-utils xsltproc unzip python openjdk-7-jdk
 
@@ -19,7 +21,7 @@ RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-download
  && chmod a+x /usr/local/bin/repo
 
 RUN groupadd -g $groupid $username \
- && useradd -m -u $userid -g $groupid -G sudo $username \
+ && useradd -m -u $userid -g $groupid -G sudo -p '$password' $username \
  && echo $username >/root/username \
  && echo "export USER="$username >>/home/$username/.gitconfig
 COPY gitconfig /home/$username/.gitconfig
