@@ -19,7 +19,7 @@ RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-download
  && chmod a+x /usr/local/bin/repo
 
 RUN groupadd -g $groupid $username \
- && useradd -m -u $userid -g $groupid $username \
+ && useradd -m -u $userid -g $groupid -G sudo $username \
  && echo $username >/root/username \
  && echo "export USER="$username >>/home/$username/.gitconfig
 COPY gitconfig /home/$username/.gitconfig
