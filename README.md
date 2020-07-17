@@ -6,14 +6,21 @@ First, build the image:
 ```
 # Copy your host gitconfig, or create a stripped down version
 $ cp ~/.gitconfig gitconfig
-$ docker build --build-arg userid=$(id -u) --build-arg groupid=$(id -g) --build-arg username=$(id -un) -t android-build-trusty .
+$ docker build \
+--build-arg userid=$(id -u) \
+--build-arg groupid=$(id -g) \
+--build-arg username=$(id -un) \
+--build-arg ssh_prv_key="$(cat ~/.ssh/id_rsa_github)" \
+--build-arg ssh_pub_key="$(cat ~/.ssh/id_rsa_github.pub)" \
+--build-arg password=\'$(mkpasswd  -m sha-512 -S saltsalt -s <<< password)\' \
+-t android-build-trusty .
 ```
 
 Create a folde to share data between host OS and Docker container. 
 Set ANDROID_BUILD_TOP variable a FULL path to the folder which will be shared between host OS and Docker container.
 All AOSP sources will be downloaded, stored and built in that folder.
 
-$ export ANDROID_BUILD_TOP <full_path_to_the_shared_folder>
+$ export ANDROID_BUILD_TOP=<full_path_to_the_shared_folder>
 
 
 Then you can start up new instances with:

@@ -28,28 +28,33 @@ RUN curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-download
  && echo "d73f3885d717c1dc89eba0563433cec787486a0089b9b04b4e8c56e7c07c7610  /usr/local/bin/repo" | sha256sum --strict -c - \
  && chmod a+x /usr/local/bin/repo
 
+# Use this ARGs to configure user
 ARG userid=1001
 ARG groupid=1001
 ARG username=developer
 # Default password is 'password'
 ARG password='$6$ldfK792N$E0jeNC3MhpDfhXo9V.tDJ2Qt84Qx3lbZtdOLD.SNDcX5kJQT1pNibj3npqeevRgbA5ARDeND5uTWwBDpdZ66T.'
 
-RUN groupadd -g $groupid $username \
- && useradd -m -u $userid -g $groupid -G sudo -p ${password} $username \
- && echo $username >/root/username \
- && echo "export USER="$username >>/home/$username/.gitconfig
-COPY gitconfig /home/$username/.gitconfig
-RUN chown $userid:$groupid /home/$username/.gitconfig
-ENV HOME=/home/$username
-ENV USER=$username
+# Use this ARGs to configure git
+ARG git_user_mail=${username}@mail.com
+ARG git_user_name=${username}
 
-# Use this variables to ingect own ssh configuration to the image
+# Use this ARGs to inject own ssh configuration to the image
 ARG ssh_prv_key=""
 ARG ssh_pub_key=""
 ARG ssh_known_hosts=""
 ARG ssh_config=""
 
-# Generate default ssh configuration
+RUN groupadd -g $groupid $username \
+ && useradd -m -u $userid -g $groupid -G sudo -p ${password} $username \
+ && echo $username >/root/username
+ENV HOME=/home/$username
+ENV USER=$username
+
+# Now all comands are executed from user
+USER $username
+
+# Configure SSH
 RUN mkdir -p /home/$username/.ssh && \
     echo "$ssh_prv_key" > /home/$username/.ssh/id_rsa && \
     echo "$ssh_pub_key" > /home/$username/.ssh/id_rsa.pub && \
@@ -60,10 +65,15 @@ RUN ssh-keyscan -H bitbucket.org >> /home/$username/.ssh/known_hosts
 RUN ssh-keyscan -H github.com >> /home/$username/.ssh/known_hosts
 # Other way to owervrite full SSH config is to put all required files to the local ./.ssh folder
 COPY ./.ssh/* /home/$username/.ssh/
-# Set correct certificates permissions
-RUN chmod 600 /home/$username/.ssh/* && \
-    chown $username:$username /home/$username/.ssh/* && \
-    chmod 600 /home/$username/.ssh && \
-    chown $username:$username /home/$username/.ssh
 
+# Configure git
+RUN git config --global user.email $git_user_mail
+RUN git config --global user.name $git_user_name
+RUN git config --global color.ui always
+RUN git config --global color.branch always
+RUN git config --global color.status always
+# This overrides previous gitconfig settings, if .gitconfig exists
+COPY ./configs/* /home/$username/
+
+USER root
 ENTRYPOINT chroot --userspec=$(cat /root/username):$(cat /root/username) / /bin/bash -i
